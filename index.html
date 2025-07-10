@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NBA 2K25 Shot Timing Trainer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+      background-color: #121212;
+      color: #fff;
+    }
+    #status {
+      font-size: 1.5em;
+      margin-top: 20px;
+    }
+    #log {
+      max-width: 500px;
+      margin: 30px auto;
+      text-align: left;
+      border: 1px solid #444;
+      padding: 10px;
+      background: #1e1e1e;
+      border-radius: 5px;
+    }
+    .green { color: #00ff88; }
+    .early, .late { color: #ff5555; }
+    button {
+      background-color: #00aaff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #0077cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏀 NBA 2K25 Shot Timing Trainer</h1>
+  <p>Press and hold your shoot button (A / Square / X), then release to practice your green window.</p>
+  <button id="connect">🎮 Connect Gamepad</button>
+
+  <div id="status">Waiting for gamepad...</div>
+  <div id="log"></div>
+
+  <script>
+    let gamepadIndex = null;
+    const SHOOT_BUTTON = 0;
+    const IDEAL = 0.55;
+    const TOLERANCE = 0.05;
+
+    let isPressing = false;
+    let startTime = 0;
+
+    function log(message, className) {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.textContent = message;
+      if (className) entry.classList.add(className);
+      logDiv.prepend(entry);
+    }
+
+    function updateGamepad() {
+      const gp = navigator.getGamepads()[gamepadIndex];
+      if (!gp) return requestAnimationFrame(updateGamepad);
+
+      const button = gp.buttons[SHOOT_BUTTON];
+
+      if (button.pressed && !isPressing) {
+        isPressing = true;
+        startTime = performance.now();
+        document.getElementById('status').textContent = "⏱ Shot started...";
+      }
+
+      if (!button.pressed && isPressing) {
+        isPressing = false;
+        const duration = (performance.now() - startTime) / 1000;
+        const diff = duration - IDEAL;
+        let statusText = "";
+
+        if (Math.abs(diff) <= TOLERANCE) {
+          statusText = `✅ Green! ${duration.toFixed(2)}s`;
+          document.getElementById('status').innerHTML = `<span class="green">${statusText}</span>`;
+          log(statusText, 'green');
+        } else if (diff < 0) {
+          statusText = `⏱ Too Early – ${duration.toFixed(2)}s`;
+          document.getElementById('status').innerHTML = `<span class="early">${statusText}</span>`;
+          log(statusText, 'early');
+        } else {
+          statusText = `⏱ Too Late – ${duration.toFixed(2)}s`;
+          document.getElementById('status').innerHTML = `<span class="late">${statusText}</span>`;
+          log(statusText, 'late');
+        }
+      }
+
+      requestAnimationFrame(updateGamepad);
+    }
+
+    document.getElementById('connect').addEventListener('click', () => {
+      window.addEventListener("gamepadconnected", (e) => {
+        gamepadIndex = e.gamepad.index;
+        document.getElementById('status').textContent = `🎮 Gamepad connected: ${e.gamepad.id}`;
+        updateGamepad();
+      });
+      alert("Press any button on your controller now to connect.");
+    });
+  </script>
+</body>
+</html>
