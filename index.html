@@ -5,47 +5,71 @@
   <title>NBA 2K25 Shot Timing Trainer</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 40px;
-      background-color: #121212;
-      color: #fff;
-    }
-    #status {
-      font-size: 1.5em;
-      margin-top: 20px;
-    }
-    #log {
-      max-width: 500px;
-      margin: 30px auto;
-      text-align: left;
-      border: 1px solid #444;
-      padding: 10px;
-      background: #1e1e1e;
-      border-radius: 5px;
-    }
-    .green { color: #00ff88; }
-    .early, .late { color: #ff5555; }
-    button {
-      background-color: #00aaff;
+      background-color: #0d0d0d;
       color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 20px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
     }
-    button:hover {
-      background-color: #0077cc;
+
+    h1 {
+      font-size: 2em;
+    }
+
+    #status {
+      margin: 20px 0;
+      font-size: 1.5em;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background: #1e90ff;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    #player {
+      width: 200px;
+      height: 200px;
+      margin: 40px auto;
+      background: url('https://i.imgur.com/NpT2Zqg.png') no-repeat center;
+      background-size: contain;
+      transition: transform 0.2s ease, filter 0.3s ease;
+    }
+
+    .shooting {
+      transform: translateY(-10px) scale(1.1);
+    }
+
+    .green {
+      filter: drop-shadow(0 0 12px lime);
+    }
+
+    .early, .late {
+      filter: drop-shadow(0 0 12px red);
+    }
+
+    #log {
+      max-width: 400px;
+      margin: 20px auto;
+      text-align: left;
+    }
+
+    #log p {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
   <h1>🏀 NBA 2K25 Shot Timing Trainer</h1>
-  <p>Press and hold your shoot button (A / Square / X), then release to practice your green window.</p>
+  <p>Press and hold your shoot button, then release to get visual and timing feedback.</p>
+
   <button id="connect">🎮 Connect Gamepad</button>
 
-  <div id="status">Waiting for gamepad...</div>
+  <div id="player"></div>
+  <div id="status">Waiting for input…</div>
   <div id="log"></div>
 
   <script>
@@ -53,16 +77,18 @@
     const SHOOT_BUTTON = 0;
     const IDEAL = 0.55;
     const TOLERANCE = 0.05;
-
     let isPressing = false;
     let startTime = 0;
 
+    const statusEl = document.getElementById('status');
+    const playerEl = document.getElementById('player');
+    const logEl = document.getElementById('log');
+
     function log(message, className) {
-      const logDiv = document.getElementById('log');
-      const entry = document.createElement('div');
+      const entry = document.createElement('p');
       entry.textContent = message;
       if (className) entry.classList.add(className);
-      logDiv.prepend(entry);
+      logEl.prepend(entry);
     }
 
     function updateGamepad() {
@@ -74,28 +100,34 @@
       if (button.pressed && !isPressing) {
         isPressing = true;
         startTime = performance.now();
-        document.getElementById('status').textContent = "⏱ Shot started...";
+        statusEl.textContent = "⏱ Shot started...";
+        playerEl.classList.add("shooting");
+        playerEl.classList.remove("green", "early", "late");
       }
 
       if (!button.pressed && isPressing) {
         isPressing = false;
         const duration = (performance.now() - startTime) / 1000;
         const diff = duration - IDEAL;
-        let statusText = "";
+
+        let feedback = "";
+        playerEl.classList.remove("shooting", "green", "early", "late");
 
         if (Math.abs(diff) <= TOLERANCE) {
-          statusText = `✅ Green! ${duration.toFixed(2)}s`;
-          document.getElementById('status').innerHTML = `<span class="green">${statusText}</span>`;
-          log(statusText, 'green');
+          feedback = `✅ Green! ${duration.toFixed(2)}s`;
+          statusEl.innerHTML = `<span class="green">${feedback}</span>`;
+          playerEl.classList.add("green");
         } else if (diff < 0) {
-          statusText = `⏱ Too Early – ${duration.toFixed(2)}s`;
-          document.getElementById('status').innerHTML = `<span class="early">${statusText}</span>`;
-          log(statusText, 'early');
+          feedback = `⏱ Too Early – ${duration.toFixed(2)}s`;
+          statusEl.innerHTML = `<span class="early">${feedback}</span>`;
+          playerEl.classList.add("early");
         } else {
-          statusText = `⏱ Too Late – ${duration.toFixed(2)}s`;
-          document.getElementById('status').innerHTML = `<span class="late">${statusText}</span>`;
-          log(statusText, 'late');
+          feedback = `⏱ Too Late – ${duration.toFixed(2)}s`;
+          statusEl.innerHTML = `<span class="late">${feedback}</span>`;
+          playerEl.classList.add("late");
         }
+
+        log(feedback);
       }
 
       requestAnimationFrame(updateGamepad);
@@ -104,10 +136,10 @@
     document.getElementById('connect').addEventListener('click', () => {
       window.addEventListener("gamepadconnected", (e) => {
         gamepadIndex = e.gamepad.index;
-        document.getElementById('status').textContent = `🎮 Gamepad connected: ${e.gamepad.id}`;
+        statusEl.textContent = `🎮 Gamepad connected: ${e.gamepad.id}`;
         updateGamepad();
       });
-      alert("Press any button on your controller now to connect.");
+      alert("Press a button on your controller to connect.");
     });
   </script>
 </body>
